@@ -25,7 +25,11 @@ async function run(): Promise<void> {
       pull => pull.title === title
     )
 
-    let pr
+    let pr: {
+      id: number
+      mergeable?: boolean
+    }
+
     if (existingPull) {
       core.info(`Existing PR : ${existingPull.id}`)
       pr = existingPull
@@ -40,24 +44,25 @@ async function run(): Promise<void> {
 
       pr = response.data
       core.info(`Created PR: ${pr.id}`)
+    }
 
-      await octokit.pulls.createReview({
+    await octokit.pulls.createReview({
+      owner,
+      repo,
+      pull_number: pr.id,
+      event: 'APPROVE',
+      commit_id: context.sha
+    })
+
+    core.info(`Approved PR: ${pr.id}`)
+
+    if (pr.mergeable) {
+      await octokit.pulls.merge({
         owner,
         repo,
         pull_number: pr.id,
-        event: 'APPROVE'
+        merge_method: 'squash'
       })
-
-      core.info(`Approved PR: ${pr.id}`)
-
-      if (pr.mergeable) {
-        await octokit.pulls.merge({
-          owner,
-          repo,
-          pull_number: pr.id,
-          merge_method: 'squash'
-        })
-      }
     }
 
     core.setOutput('pull_number', pr.id.toString())

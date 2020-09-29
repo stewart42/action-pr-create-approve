@@ -1457,21 +1457,22 @@ function run() {
                 });
                 pr = response.data;
                 core.info(`Created PR: ${pr.id}`);
-                yield octokit.pulls.createReview({
+            }
+            yield octokit.pulls.createReview({
+                owner,
+                repo,
+                pull_number: pr.id,
+                event: 'APPROVE',
+                commit_id: github_1.context.sha
+            });
+            core.info(`Approved PR: ${pr.id}`);
+            if (pr.mergeable) {
+                yield octokit.pulls.merge({
                     owner,
                     repo,
                     pull_number: pr.id,
-                    event: 'APPROVE'
+                    merge_method: 'squash'
                 });
-                core.info(`Approved PR: ${pr.id}`);
-                if (pr.mergeable) {
-                    yield octokit.pulls.merge({
-                        owner,
-                        repo,
-                        pull_number: pr.id,
-                        merge_method: 'squash'
-                    });
-                }
             }
             core.setOutput('pull_number', pr.id.toString());
         }
