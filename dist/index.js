@@ -1476,7 +1476,7 @@ function run() {
             core.setOutput('pull_number', pr.id.toString());
         }
         catch (error) {
-            core.debug(error);
+            core.info(JSON.stringify(error));
             core.setFailed(error.message);
         }
     });
