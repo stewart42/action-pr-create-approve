@@ -1,11 +1,20 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Create and Approve a PR'
+description: 'Create, approve and merge (if mergable) a PR'
+author: 'stewart42'
 inputs:
-  milliseconds: # change this
+  GITHUB_TOKEN:
+    description: 'A Github access token'
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+  title:
+    description: 'The title of the pull request.'
+    required: true
+  head:
+    description: 'The head ref that should be pulled into base.'
+    required: true
+  base:
+    description: 'The base branch for the pull request.'
+    required: true
+
 runs:
   using: 'node12'
   main: 'dist/index.js'
