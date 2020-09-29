@@ -1,5 +1,6 @@
 import * as core from '@actions/core'
 import {context, getOctokit} from '@actions/github'
+import {inspect} from 'util'
 
 async function run(): Promise<void> {
   try {
@@ -26,12 +27,12 @@ async function run(): Promise<void> {
     )
 
     let pr: {
-      id: number
+      number: number
       mergeable?: boolean
     }
 
     if (existingPull) {
-      core.info(`Existing PR : ${existingPull.id}`)
+      core.info(`Existing PR : ${existingPull.number}`)
       pr = existingPull
     } else {
       const response = await octokit.pulls.create({
@@ -43,32 +44,32 @@ async function run(): Promise<void> {
       })
 
       pr = response.data
-      core.info(`Created PR: ${pr.id}`)
+      core.info(`Created PR: ${pr.number}`)
     }
 
     await octokit.pulls.createReview({
       owner,
       repo,
-      pull_number: pr.id,
+      pull_number: pr.number,
       event: 'APPROVE',
       commit_id: context.sha
     })
 
-    core.info(`Approved PR: ${pr.id}`)
+    core.info(`Approved PR: ${pr.number}`)
 
     if (pr.mergeable) {
       await octokit.pulls.merge({
         owner,
         repo,
-        pull_number: pr.id,
+        pull_number: pr.number,
         merge_method: 'squash'
       })
     }
 
-    core.setOutput('pull_number', pr.id.toString())
+    core.setOutput('pull_number', pr.number.toString())
   } catch (error) {
-    core.info(JSON.stringify(error))
     core.setFailed(error.message)
+    core.info(inspect(error))
   }
 }
 

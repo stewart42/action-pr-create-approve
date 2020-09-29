@@ -1425,6 +1425,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(186));
 const github_1 = __webpack_require__(438);
+const util_1 = __webpack_require__(669);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -1444,7 +1445,7 @@ function run() {
             const existingPull = pullsListResponse.data.find(pull => pull.title === title);
             let pr;
             if (existingPull) {
-                core.info(`Existing PR : ${existingPull.id}`);
+                core.info(`Existing PR : ${existingPull.number}`);
                 pr = existingPull;
             }
             else {
@@ -1456,29 +1457,29 @@ function run() {
                     base
                 });
                 pr = response.data;
-                core.info(`Created PR: ${pr.id}`);
+                core.info(`Created PR: ${pr.number}`);
             }
             yield octokit.pulls.createReview({
                 owner,
                 repo,
-                pull_number: pr.id,
+                pull_number: pr.number,
                 event: 'APPROVE',
                 commit_id: github_1.context.sha
             });
-            core.info(`Approved PR: ${pr.id}`);
+            core.info(`Approved PR: ${pr.number}`);
             if (pr.mergeable) {
                 yield octokit.pulls.merge({
                     owner,
                     repo,
-                    pull_number: pr.id,
+                    pull_number: pr.number,
                     merge_method: 'squash'
                 });
             }
-            core.setOutput('pull_number', pr.id.toString());
+            core.setOutput('pull_number', pr.number.toString());
         }
         catch (error) {
-            core.info(JSON.stringify(error));
             core.setFailed(error.message);
+            core.info(util_1.inspect(error));
         }
     });
 }
