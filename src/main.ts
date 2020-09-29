@@ -14,36 +14,53 @@ async function run(): Promise<void> {
     core.debug(`owner: ${owner} repo: ${repo}`)
 
     const octokit = getOctokit(token)
-    const response = await octokit.pulls.create({
+
+    const pullsListResponse = await octokit.pulls.list({
       owner,
       repo,
-      title,
-      head,
-      base
+      state: 'open'
     })
 
-    const pull_number = response.data.id
-    core.info(`Created PR: ${pull_number}`)
+    const existingPull = pullsListResponse.data.find(
+      pull => pull.title === title
+    )
 
-    await octokit.pulls.createReview({
-      owner,
-      repo,
-      pull_number,
-      event: 'APPROVE'
-    })
-
-    core.info(`Approved PR: ${pull_number}`)
-
-    if (response.data.mergeable) {
-      await octokit.pulls.merge({
+    let pr
+    if (existingPull) {
+      core.info(`Existing PR : ${existingPull.id}`)
+      pr = existingPull
+    } else {
+      const response = await octokit.pulls.create({
         owner,
         repo,
-        pull_number,
-        merge_method: 'squash'
+        title,
+        head,
+        base
       })
+
+      pr = response.data
+      core.info(`Created PR: ${pr.id}`)
+
+      await octokit.pulls.createReview({
+        owner,
+        repo,
+        pull_number: pr.id,
+        event: 'APPROVE'
+      })
+
+      core.info(`Approved PR: ${pr.id}`)
+
+      if (pr.mergeable) {
+        await octokit.pulls.merge({
+          owner,
+          repo,
+          pull_number: pr.id,
+          merge_method: 'squash'
+        })
+      }
     }
 
-    core.setOutput('pull_number', pull_number.toString())
+    core.setOutput('pull_number', pr.id.toString())
   } catch (error) {
     core.debug(error)
     core.setFailed(error.message)

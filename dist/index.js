@@ -1436,31 +1436,44 @@ function run() {
             const { owner, repo } = github_1.context.repo;
             core.debug(`owner: ${owner} repo: ${repo}`);
             const octokit = github_1.getOctokit(token);
-            const response = yield octokit.pulls.create({
+            const pullsListResponse = yield octokit.pulls.list({
                 owner,
                 repo,
-                title,
-                head,
-                base
+                state: 'open'
             });
-            const pull_number = response.data.id;
-            core.info(`Created PR: ${pull_number}`);
-            yield octokit.pulls.createReview({
-                owner,
-                repo,
-                pull_number,
-                event: 'APPROVE'
-            });
-            core.info(`Approved PR: ${pull_number}`);
-            if (response.data.mergeable) {
-                yield octokit.pulls.merge({
+            const existingPull = pullsListResponse.data.find(pull => pull.title === title);
+            let pr;
+            if (existingPull) {
+                core.info(`Existing PR : ${existingPull.id}`);
+                pr = existingPull;
+            }
+            else {
+                const response = yield octokit.pulls.create({
                     owner,
                     repo,
-                    pull_number,
-                    merge_method: 'squash'
+                    title,
+                    head,
+                    base
                 });
+                pr = response.data;
+                core.info(`Created PR: ${pr.id}`);
+                yield octokit.pulls.createReview({
+                    owner,
+                    repo,
+                    pull_number: pr.id,
+                    event: 'APPROVE'
+                });
+                core.info(`Approved PR: ${pr.id}`);
+                if (pr.mergeable) {
+                    yield octokit.pulls.merge({
+                        owner,
+                        repo,
+                        pull_number: pr.id,
+                        merge_method: 'squash'
+                    });
+                }
             }
-            core.setOutput('pull_number', pull_number.toString());
+            core.setOutput('pull_number', pr.id.toString());
         }
         catch (error) {
             core.debug(error);
